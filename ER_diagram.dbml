@@ -1,0 +1,46 @@
+Table Clients {
+  id int [pk, increment] // Уникальный идентификатор клиента
+  fullname varchar
+  document varchar
+  age integer // Дата рождения
+  phone_number str // Телефон клиента
+  address varchar // Адрес клиента
+  email varchar
+}
+
+Table PledgedItems {
+  id int [pk, increment] // Уникальный идентификатор залогового товара
+  client_id int [ref: > Clients.id] // Ссылка на клиента
+  item_name varchar(255) // Название товара
+  item_description text // Описание товара
+  item_value decimal(10, 2) // Оценочная стоимость товара
+  appraisal_date date // Дата оценки товара
+}
+
+Table PaymentSchedules {
+  id int [pk, increment] // Уникальный идентификатор записи
+  agreement_id int [ref: > Agreements.id] // Ссылка на соглашение
+  payment_date date // Дата платежа
+  payment_amount decimal(10, 2) // Сумма платежа
+  status_payment varchar(50) // Статус платежа (например, "ожидается", "оплачено", "просрочено")
+  payment_type varchar(50) // Тип платежа (например, "ежемесячный", "единоразовый", "частичное погашение")
+}
+
+Table Agreements {
+  id int [pk, increment] // Уникальный идентификатор соглашения
+  pledged_item_id int [ref: > PledgedItems.id] // Ссылка на залоговый товар
+  client_id int [ref: > Clients.id] // Ссылка на клиента
+  loan_amount decimal(10, 2) // Сумма займа
+  commission decimal(10, 2) // Комиссия ломбарда
+  due_date date // Срок возврата
+  issue_date date // Дата оформления соглашения
+  status_agreements varchar // Статус соглашения (например, "активно", "погашено", "просрочено")
+}
+
+Table Transactions {
+  id int [pk, increment] // Уникальный идентификатор транзакции
+  agreement_id int [ref: > Agreements.id] // Ссылка на соглашение
+  transaction_date date // Дата транзакции
+  amount decimal(10, 2) // Сумма транзакции (например, погашение займа)
+  transaction_type varchar(50) // Тип транзакции (например, "погашение", "выдача займа")
+}
