@@ -9,7 +9,7 @@ class BaseClient:
         self.__phone_number = self.__validate_phone_number(phone_number)
         self.__email = self.__validate_email(email)
         self.__document = self.__validate_document(document)
-        self.__address = self.__validate_non_empty_string(address)
+        self.__address = self.__validate_non_empty_string(address, "Адрес")
         
     
     @staticmethod
@@ -113,3 +113,30 @@ class BaseClient:
 
     def set_email(self, email):
         self.__email = self.__validate_email(email)
+
+    # Полная версия объекта
+    def __str__(self):
+            return (f"Client [ID: {self.__client_id}, FIO: {self.__fullname}, "
+                    f"Document: {self.__document}, Age: {self.__age}, Phone_Number: {self.__phone_number}, "
+                    f"Address: {self.__address}, Email: {self.__email}]")
+    
+    # Краткая версия объекта (важная информация)
+    def short_info(self):
+        return f"Client [ID: {self.__client_id}, FIO: {self.__fullname}, Phone_Number: {self.__phone_number}]"
+        
+    # Метод для сравнения объектов
+    def __eq__(self, other):
+        if isinstance(other, BaseClient):
+            return (self.__client_id == other.__client_id and
+                    self.__fullname == other.__fullname and
+                    self.__document == other.__document and
+                    self.__age == other.__age and
+                    self.__phone_number == other.__phone_number and
+                    self.__address == other.__address and
+                    self.__email == other.__email)
+        return False
+
+client = BaseClient(1, "Иван Иванов", "1234 123123", 25, "+7 999 123 45 67", "Москва 12", "ivanov@example.com")
+
+print("Полная версия", client)
+print("Краткая версия", client.short_info())
