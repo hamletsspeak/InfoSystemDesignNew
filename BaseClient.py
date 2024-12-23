@@ -3,52 +3,53 @@ import re
 class BaseClient:
     
     def __init__(self, client_id, fullname, document, age, phone_number, address, email):
-        self.__client_id = self.validate(client_id, self.validate_client_id)
-        self.__fullname = self.validate(fullname, self.validate_fullname)
-        self.__age = self.validate(age, self.validate_age)
-        self.__phone_number = self.validate(phone_number, self.validate_phone_number)
-        self.__email = self.validate(email, self.validate_email)
-        self.__document = document
-        self.__address = address
+        self.__client_id = self.__validate_client_id(client_id)
+        self.__fullname = self.__validate_fullname(fullname)
+        self.__age = self.__validate_age(age)
+        self.__phone_number = self.__validate_phone_number(phone_number)
+        self.__email = self.__validate_email(email)
+        self.__document = self.__validate_document(document)
+        self.__address = self.__validate_non_empty_string(address)
         
-    # Общий метод валидации
+    
     @staticmethod
-    def validate(value, validation_function):
-        return validation_function(value)
-
-    # Статические методы валидации
+    def __validate_non_empty_string(value, field_name):
+        if isinstance(value, str) and value.strip():
+            return value
+        raise ValueError(f"{field_name} must be a non-empty string.")
+    
     @staticmethod
-    def validate_client_id(client_id):
+    def __validate_client_id(client_id):
         if not isinstance(client_id, int) or client_id <= 0:
             raise ValueError("ID клиента должен быть положительным целым числом.")
         return client_id
 
     @staticmethod
-    def validate_fullname(fullname):
+    def __validate_fullname(fullname):
         if not isinstance(fullname, str) or len(fullname) == 0:
             raise ValueError("ФИО введено неверно (не может быть пустым значением).")
         return fullname
 
     @staticmethod
-    def validate_document(document):
+    def __validate_document(document):
         if not isinstance(document, str) or not re.fullmatch(r'\d{4} \d{6}', document):
             raise ValueError('Неверные данные паспорта (документа).')
         return document
 
     @staticmethod
-    def validate_age(age):
-        if not isinstance(age, int) or age <= 0:
-            raise ValueError("Возраст должен быть положительным числом.")
+    def __validate_age(age):
+        if not isinstance(age, int) or age <= 18:
+            raise ValueError("Вы должны быть старше 18 лет, чтобы использовать эту услугу.")
         return age
 
     @staticmethod
-    def validate_phone_number(phone_number):
+    def __validate_phone_number(phone_number):
         if not isinstance(phone_number, str) or not re.fullmatch(r'((8|\+7)[\- ]?)?(\(?\d{3}\)?[\- ]?)?[\d\- ]{7,10}', phone_number):
             raise ValueError("Номер телефона введен неверно.")
         return phone_number
 
     @staticmethod
-    def validate_email(email):
+    def __validate_email(email):
         if not isinstance(email, str) or not re.fullmatch(r'(.+)@(.+)\.(.+)', email):
             raise ValueError("Электронная почта введена неверно.")
         return email
@@ -77,19 +78,19 @@ class BaseClient:
 
     # Сеттеры
     def set_fullname(self, fullname):
-        self.__fullname = self.validate(fullname, self.validate_fullname)
+        self.__fullname = self.__validate_fullname(fullname)
 
     def set_document(self, document):
-        self.__document = self.validate(document, self.validate_document)
+        self.__document = self.__validate_document(document)
 
     def set_age(self, age):
-        self.__age = self.validate(age, self.validate_age)
+        self.__age = self.__validate_age(age)
 
     def set_phone_number(self, phone_number):
-        self.__phone_number = self.validate(phone_number, self.validate_phone_number)
+        self.__phone_number = self.__validate_phone_number(phone_number)
 
     def set_address(self, address):
-        self.__address = address
+        self.__address = self.__validate_non_empty_string(address)
 
     def set_email(self, email):
-        self.__email = self.validate(email, self.validate_email)
+        self.__email = self.__validate_email(email)
