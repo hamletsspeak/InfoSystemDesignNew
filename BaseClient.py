@@ -54,6 +54,25 @@ class BaseClient:
             raise ValueError("Электронная почта введена неверно.")
         return email
 
+    @staticmethod
+    def from_string(data_str):
+        try:
+            data = data_str.split(',')
+            if len(data) != 7:
+                raise ValueError("Неверное количество полей в строке.")
+            
+            client_id = int(data[0].strip())
+            fullname = data[1].strip()
+            document = data[2].strip()
+            age = data[3].strip()
+            phone_number = data[4].strip()
+            address = data[5].strip()
+            email = data[6].strip()
+            
+            return BaseClient(client_id, fullname, document, age, phone_number, address, email)
+        except Exception as e:
+            raise ValueError(f"Ошибка при разборе данных клиента: {e}")
+        
     # Геттеры
     def get_client_id(self):
         return self.__client_id
