@@ -16,7 +16,7 @@ class BaseClient:
     def __validate_non_empty_string(value, field_name):
         if isinstance(value, str) and value.strip():
             return value
-        raise ValueError(f"{field_name} must be a non-empty string.")
+        raise ValueError(f"{field_name} должно быть непустой строкой.")
     
     @staticmethod
     def __validate_client_id(client_id):
