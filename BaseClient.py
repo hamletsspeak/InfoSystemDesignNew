@@ -1,5 +1,5 @@
 import re
-
+import json
 class BaseClientShortInfo:
     def __init__(self, client_id, fullname, document):
         self.__client_id = self.__validate_client_id(client_id)
@@ -123,6 +123,22 @@ class BaseClient(BaseClientShortInfo):
         except Exception as e:
             raise ValueError(f"Ошибка при разборе данных клиента: {e}")
         
+    @staticmethod
+    def from_dict(data: dict):
+        return BaseClient(
+            data['client_id'], data['fullname'], data['document'], data['age'], 
+            data['phone_number'], data['address'], data['email'],)
+    def to_dict(self):
+        return {
+            'client_id': self.get_client_id(),
+            'fullname': self.get_fullname(),
+            'document': self.get_document(),
+            'age': self.get_age(),
+            'phone_number': self.get_phone_number(),
+            'address': self.get_address(),
+            'email': self.get_email()
+        }
+
     def get_age(self):
         return self.__age
 
@@ -159,6 +175,76 @@ class BaseClient(BaseClientShortInfo):
         if isinstance(other, BaseClient):
             return (super().__eq__(other))
         return False
+    
+class BaseClient_Rep_Json:
+    def __init__(self, file_name):
+        self.file_name = file_name
+        self.clients = self.read_all()
+        
+    def read_all(self):
+        try:
+            with open(self.file_name, 'r') as file:
+                data = json.load(file)
+                return [BaseClient.from_dict(client) for client in data]
+        except FileNotFoundError:
+            return []
+
+    def save_all(self):
+        data = []
+        for client in self.clients:
+            data.append(client.to_dict())
+        with open(self.file_name, 'w') as file:
+            json.dump([client.to_dict() for client in self.clients], file, indent=4)
+
+    def get_by_id(self, client_id):
+        for client in self.clients:
+            if client.get_client_id() == client_id:
+                return client
+        raise ValueError(f"Client with ID {client_id} not found")
+
+    def get_k_n_short_list(self, k, n):
+        start = (k - 1) * n
+        end = start + n
+        return self.clients[start:end]
+
+    def sort_by_field(self):
+        self.clients.sort(key=lambda client: client.client_id)
+
+    def __is_unique(self, document, unverifiable_client_id=None):
+        if unverifiable_client_id:
+            for client in self.clients:
+                if client.get_client_id() != unverifiable_client_id and client.get_document() == document:
+                    return False
+        else:
+            for client in self.clients:
+                if client.get_document() == document:
+                    return False
+        return True
+
+    def add_client(self, fullname, document, age, phone_number, address, email):
+        new_id = max([client.get_client_id() for client in self.clients], default=0) + 1
+        if not self.__is_unique(document):
+            raise ValueError(f"client with this document already exists.")
+        new_client = BaseClient(new_id, fullname, document, age, phone_number, address, email)
+        self.clients.append(new_client)
+        self.save_all()
+
+    def replace_by_id(self, client_id, new_client):
+        if not self.__is_unique(new_client.get_document(), client_id):
+            raise ValueError(f"Customer with this document already exists.")
+        for i, client in enumerate(self.clients):
+            if client.get_client_id() == client_id:
+                self.clients[i] = new_client
+                self.save_all()
+                return True
+        return False
+
+    def delete_by_id(self, client_id):
+        self.clients = [client for client in self.clients if client.get_client_id() != client_id]
+        self.save_all()
+
+    def get_count(self):
+        return len(self.clients)
 
 clientFull = BaseClient(1, "Иван Иванов", "1234 123123", 25, "+7 123 123 12 12", "Москва 12", "ivanov@example.com")
 clientShort = BaseClientShortInfo(1, "Иван Иванов", "1234 123123")

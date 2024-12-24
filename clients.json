@@ -1,0 +1,56 @@
+[
+    {
+        "client_id": 111,
+        "fullname": "Гамлет Урушадзе",
+        "document": "1234 123112",
+        "age": 21,
+        "phone_number": "89191911212",
+        "address": "123 Main St",
+        "email": "gamlet.urushadze1@gmail.com"
+    },
+    {
+        "client_id": 112,
+        "fullname": "Александр Иванов",
+        "document": "2345 234213",
+        "age": 30,
+        "phone_number": "89628853782",
+        "address": "456 Oak Rd",
+        "email": "alex.ivanov@example.com"
+    },
+    {
+        "client_id": 113,
+        "fullname": "Елена Смирнова",
+        "document": "3456 345314",
+        "age": 28,
+        "phone_number": "89738863883",
+        "address": "789 Maple Ave",
+        "email": "elena.smirnova@example.com"
+    },
+    {
+        "client_id": 114,
+        "fullname": "Иван Петров",
+        "document": "4567 456415",
+        "age": 35,
+        "phone_number": "89952224114",
+        "address": "321 Pine Blvd",
+        "email": "ivan.petrov@example.com"
+    },
+    {
+        "client_id": 115,
+        "fullname": "Мария Кузнецова",
+        "document": "5678 567516",
+        "age": 24,
+        "phone_number": "89063344556",
+        "address": "654 Birch St",
+        "email": "maria.kuznetsova@example.com"
+    },
+    {
+        "client_id": 116,
+        "fullname": "Андрей Сидоров",
+        "document": "6789 678617",
+        "age": 40,
+        "phone_number": "89991122334",
+        "address": "987 Cedar Rd",
+        "email": "andrey.sidorov@example.com"
+    }
+]
