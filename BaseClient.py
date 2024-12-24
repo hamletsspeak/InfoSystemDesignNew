@@ -1,5 +1,6 @@
 import re
 import json
+import yaml
 class BaseClientShortInfo:
     def __init__(self, client_id, fullname, document):
         self.__client_id = self.__validate_client_id(client_id)
@@ -200,7 +201,7 @@ class BaseClient_Rep_Json:
         except FileNotFoundError:
             return []
 
-    def save_all(self):
+    def __save_all(self):
         data = []
         for client in self.clients:
             data.append(client.to_dict())
@@ -238,25 +239,92 @@ class BaseClient_Rep_Json:
             raise ValueError(f"client with this document already exists.")
         new_client = BaseClient(new_id, fullname, document, age, phone_number, address, email)
         self.clients.append(new_client)
-        self.save_all()
+        self.__save_all()
 
     def replace_by_id(self, client_id, new_client):
         if not self.__is_unique(new_client.get_document(), client_id):
-            raise ValueError(f"Customer with this document already exists.")
+            raise ValueError(f"client with this document already exists.")
         for i, client in enumerate(self.clients):
             if client.get_client_id() == client_id:
                 self.clients[i] = new_client
-                self.save_all()
+                self.__save_all()
                 return True
         return False
 
     def delete_by_id(self, client_id):
         self.clients = [client for client in self.clients if client.get_client_id() != client_id]
-        self.save_all()
+        self.__save_all()
 
     def get_count(self):
         return len(self.clients)
 
+class BaseClient_Rep_Yaml:
+    def __init__(self, filename):
+        self.filename = filename
+        self.clients = self.read_all()
+
+    def read_all(self):
+        try:
+            with open(self.filename, 'r') as file:
+                data = yaml.safe_load(file)
+                return [client.from_dict(client) for client in data] if data else []
+        except FileNotFoundError:
+            return []
+
+    def __save_all(self):
+        with open(self.filename, 'w') as file:
+            yaml.safe_dump([client.to_dict() for client in self.clients], file)
+
+    def __is_unique(self, document, unverifiable_client_id=None):
+        if unverifiable_client_id:
+            for client in self.clients:
+                if client.get_client_id() != unverifiable_client_id and client.get_email() == email:
+                    return False
+        else:
+            for client in self.clients:
+                if client.get_document() == document:
+                    return False
+        return True
+
+    def get_by_id(self, client_id):
+        for client in self.clients:
+            if client.get_client_id() == client_id:
+                return client
+        raise ValueError(f"client with ID {client_id} not found.")
+
+    def get_k_n_short_list(self, k, n):
+        start = (k - 1) * n
+        end = start + n
+        return self.clients[start:end]
+
+    def sort_by_field(self):
+        self.clients.sort(key=lambda client: client.client_id)
+
+    def add_client(self, fullname, document, age, phone_number, address, email):
+        new_id = max([client.get_client_id() for client in self.clients], default=0) + 1
+        if not self.__is_unique(email):
+            raise ValueError(f"client with this email already exists.")
+        new_client = BaseClient(new_id, fullname, document, age, phone_number, address, email)
+        self.clients.append(new_client)
+        self.__save_all()
+
+    def replace_by_id(self, client_id, new_client):
+        if not self.__is_unique(new_client.get_document(), client_id):
+            raise ValueError(f"client with this email already exists.")
+        for i, client in enumerate(self.clients):
+            if client.get_client_id() == client_id:
+                self.clients[i] = new_client
+                self.__save_all()
+                return True
+        return False
+
+    def delete_by_id(self, client_id):
+        self.clients = [client for client in self.clients if client.get_client_id() != client_id]
+        self.__save_all()
+
+    def get_count(self):
+        return len(self.clients)
+    
 clientFull = BaseClient(1, "Иван Иванов", "1234 123123", 25, "+7 123 123 12 12", "Москва 12", "ivanov@example.com")
 clientShort = BaseClientShortInfo(1, "Иван Иванов", "1234 123123")
 clientEq = BaseClientShortInfo(1, "Иван Иванов", "1234 123123")

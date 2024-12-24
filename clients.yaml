@@ -1,0 +1,14 @@
+- address: Стасова 12
+  customer_id: 1
+  email: john.doe@example.com
+  first_name: John
+  phone_number: '+1234567890'
+  age: 21
+  document: "1234 123123"
+- address: Стасова 13
+  customer_id: 2
+  email: Sam.doe@example.com
+  first_name: Sam
+  phone_number: '+1234567890'
+  age: 22
+  document: "1234 123124"
