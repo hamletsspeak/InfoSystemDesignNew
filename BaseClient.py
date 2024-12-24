@@ -67,10 +67,12 @@ class BaseClientShortInfo:
     def __hash__(self):
         return hash(self.get_fullname()) + hash(self.get_client_id()) + hash(self.get_document())
 
-class BaseClient(BaseClientShortInfo):
-    
-    def __init__(self, client_id, fullname, document, age = None, phone_number = None, address = None, email = None):
-        super().__init__(client_id, fullname, document)
+class BaseClient:
+    def __init__(self, client_id, fullname, document, age=None, phone_number=None, address=None, email=None, short_info=None):
+        if short_info:
+            self.short_info = short_info
+        else:
+            self.short_info = BaseClientShortInfo(client_id, fullname, document)
         if phone_number:
             self.set_phone_number(phone_number)
         if address:
@@ -139,6 +141,15 @@ class BaseClient(BaseClientShortInfo):
             'email': self.get_email()
         }
 
+    def get_client_id(self):
+        return self.short_info.get_client_id()
+
+    def get_fullname(self):
+        return self.short_info.get_fullname()
+
+    def get_document(self):
+        return self.short_info.get_document()
+    
     def get_age(self):
         return self.__age
 
@@ -163,17 +174,17 @@ class BaseClient(BaseClientShortInfo):
     def set_phone_number(self, phone_number):
         self.__phone_number = self.__validate_phone_number(phone_number)
     
+    def get_short_info(self):
+        return str(self.short_info)
+
     def __str__(self):
             return (f"Client [ID: {self.get_client_id()}, FIO: {self.get_fullname()}, "
                     f"Document: {self.get_document()}, Age: {self.__age}, Phone_Number: {self.__phone_number}, "
                     f"Address: {self.__address}, Email: {self.__email}]")
     
-    def short_info(self):
-        return super().__str__()
-        
     def __eq__(self, other):
         if isinstance(other, BaseClient):
-            return (super().__eq__(other))
+            return (self.short_info == other.short_info)
         return False
     
 class BaseClient_Rep_Json:
