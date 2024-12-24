@@ -69,12 +69,16 @@ class BaseClientShortInfo:
 
 class BaseClient(BaseClientShortInfo):
     
-    def __init__(self, client_id, fullname, document, age, phone_number, address, email):
+    def __init__(self, client_id, fullname, document, age = None, phone_number = None, address = None, email = None):
         super().__init__(client_id, fullname, document)
-        self.set_phone_number(phone_number)
-        self.set_address(address)
-        self.set_email(email)
-        self.set_age(age)
+        if phone_number:
+            self.set_phone_number(phone_number)
+        if address:
+            self.set_address(address)
+        if email:
+            self.set_email(email)
+        if age:
+            self.set_age(age)
             
     @staticmethod
     def __validate_non_empty_string(value, field_name):
@@ -158,6 +162,8 @@ class BaseClient(BaseClientShortInfo):
 
 clientFull = BaseClient(1, "Иван Иванов", "1234 123123", 25, "+7 123 123 12 12", "Москва 12", "ivanov@example.com")
 clientShort = BaseClientShortInfo(1, "Иван Иванов", "1234 123123")
+clientEq = BaseClientShortInfo(1, "Иван Иванов", "1234 123123")
 
 print("Полная версия", clientFull)
 print("Краткая версия", clientShort)
+print(clientShort==clientEq)
