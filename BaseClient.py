@@ -1,9 +1,10 @@
 import re
 import json
 import yaml
+from abc import ABC, abstractmethod
 class BaseClientShortInfo:
     def __init__(self, client_id, fullname, document):
-        self.__client_id = self.__validate_client_id(client_id)
+        self.set_id(client_id)
         self.set_fullname(fullname)
         self.set_document(document)
         
@@ -49,6 +50,9 @@ class BaseClientShortInfo:
     def get_document(self):
         return self.__document
     
+    def set_id(self, client_id):
+        self.__client_id = self.__validate_client_id(client_id)
+
     def set_fullname(self, fullname):
         self.__fullname = self.__validate_fullname(fullname)
 
@@ -187,8 +191,41 @@ class BaseClient:
         if isinstance(other, BaseClient):
             return (self.short_info == other.short_info)
         return False
+
+class BaseClient_Rep_Strategy(ABC):
+    @abstractmethod
+    def read_all(self):
+        pass
+
+    @abstractmethod
+    def save_all(self):
+        pass
+
+    @abstractmethod
+    def get_by_id(self, client_id):
+        pass
+
+    @abstractmethod
+    def get_k_n_short_list(self, k, n):
+        pass
     
-class BaseClient_Rep_Json:
+    @abstractmethod
+    def sort_by_field(self):
+        pass
+    
+    @abstractmethod
+    def add_client(self, fullname, document, age, phone_number, address, email):
+        pass
+
+    @abstractmethod
+    def replace_by_id(self, client_id, new_client):
+        pass
+
+    @abstractmethod
+    def delete_by_id(self, client_id):
+        pass
+    
+class BaseClient_Rep_Json(BaseClient_Rep_Strategy):
     def __init__(self, file_name):
         self.file_name = file_name
         self.clients = self.read_all()
@@ -258,7 +295,7 @@ class BaseClient_Rep_Json:
     def get_count(self):
         return len(self.clients)
 
-class BaseClient_Rep_Yaml:
+class BaseClient_Rep_Yaml(BaseClient_Rep_Strategy):
     def __init__(self, filename):
         self.filename = filename
         self.clients = self.read_all()
@@ -278,7 +315,7 @@ class BaseClient_Rep_Yaml:
     def __is_unique(self, document, unverifiable_client_id=None):
         if unverifiable_client_id:
             for client in self.clients:
-                if client.get_client_id() != unverifiable_client_id and client.get_email() == email:
+                if client.get_client_id() != unverifiable_client_id and client.get_document() == document:
                     return False
         else:
             for client in self.clients:
@@ -302,15 +339,15 @@ class BaseClient_Rep_Yaml:
 
     def add_client(self, fullname, document, age, phone_number, address, email):
         new_id = max([client.get_client_id() for client in self.clients], default=0) + 1
-        if not self.__is_unique(email):
-            raise ValueError(f"client with this email already exists.")
+        if not self.__is_unique(document):
+            raise ValueError(f"client with this document already exists.")
         new_client = BaseClient(new_id, fullname, document, age, phone_number, address, email)
         self.clients.append(new_client)
         self.__save_all()
 
     def replace_by_id(self, client_id, new_client):
         if not self.__is_unique(new_client.get_document(), client_id):
-            raise ValueError(f"client with this email already exists.")
+            raise ValueError(f"client with this document already exists.")
         for i, client in enumerate(self.clients):
             if client.get_client_id() == client_id:
                 self.clients[i] = new_client
@@ -325,6 +362,31 @@ class BaseClient_Rep_Yaml:
     def get_count(self):
         return len(self.clients)
     
+class BaseClientManagerStrategy:
+    def __init__(self, repository_strategy: BaseClient_Rep_Strategy):
+        self.repository = repository_strategy
+
+    def add_client(self, fullname, document, age, phone_number, address, email):
+        self.repository.add_client(fullname, document, age, phone_number, address, email)
+
+    def get_client_by_id(self, client_id):
+        return self.repository.get_by_id(client_id)
+
+    def replace_client(self, client_id, new_client):
+        return self.repository.replace_by_id(client_id, new_client)
+
+    def delete_client(self, client_id):
+        return self.repository.delete_by_id(client_id)
+
+    def get_all_clients(self):
+        return self.repository.read_all()
+    
+    def get_k_n_short_list(self, k, n):
+        return self.repository.get_k_n_short_list()
+    
+    def sort_by_field(self):
+        return self.repository.sort_by_field()
+
 clientFull = BaseClient(1, "Иван Иванов", "1234 123123", 25, "+7 123 123 12 12", "Москва 12", "ivanov@example.com")
 clientShort = BaseClientShortInfo(1, "Иван Иванов", "1234 123123")
 clientEq = BaseClientShortInfo(1, "Иван Иванов", "1234 123123")
