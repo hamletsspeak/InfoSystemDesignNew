@@ -1,14 +1,23 @@
-- address: Стасова 12
-  customer_id: 1
-  email: john.doe@example.com
-  first_name: John
-  phone_number: '+1234567890'
-  age: 21
-  document: "1234 123123"
-- address: Стасова 13
-  customer_id: 2
-  email: Sam.doe@example.com
-  first_name: Sam
-  phone_number: '+1234567890'
-  age: 22
-  document: "1234 123124"
+- address: "\u041C\u043E\u0441\u043A\u0432\u0430"
+  age: 30
+  client_id: 1
+  document: 1234 567890
+  email: ivan@mail.com
+  fullname: "\u0418\u0432\u0430\u043D \u0418\u0432\u0430\u043D\u043E\u0432"
+  phone_number: 8 800 555 3531
+- address: "\u0421\u0430\u043D\u043A\u0442-\u041F\u0435\u0442\u0435\u0440\u0431\u0443\
+    \u0440\u0433"
+  age: 28
+  client_id: 2
+  document: 2345 678901
+  email: gamlet@mail.com
+  fullname: "\u0413\u0430\u043C\u043B\u0435\u0442 \u0423\u0440\u0443\u0448\u0430\u0434\
+    \u0437\u0435"
+  phone_number: 8 800 555 3535
+- address: "\u041C\u043E\u0441\u043A\u0432\u0430"
+  age: 30
+  client_id: 3
+  document: 1211 111111
+  email: ivan@mail.com
+  fullname: "\u0418\u0432\u0430\u043D \u0418\u0432\u0430\u043D\u043E\u0432"
+  phone_number: '89728845781'
