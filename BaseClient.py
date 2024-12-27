@@ -5,6 +5,7 @@ import psycopg2
 from psycopg2 import sql
 from typing import List
 from abc import ABC, abstractmethod
+from psycopg2.extras import DictCursor
 
 class BaseClientShortInfo:
     def __init__(self, client_id, fullname, document):
@@ -251,7 +252,106 @@ class BaseClient_Rep_Strategy(ABC):
 
     def sort_by_field(self):
         self.clients.sort(key=lambda client: client.client_id)
+        
+    def get_count(self):
+        return len(self.clients)
+    
+class Database:
+    _instance = None
 
+    def __new__(cls, db_config):
+        if not cls._instance:
+            cls._instance = super().__new__(cls)
+            cls._instance.connection = psycopg2.connect(**db_config)
+            cls._instance.cursor = cls._instance.connection.cursor()
+        return cls._instance
+
+    def execute_query(self, query, params=None):
+        self.cursor.execute(query, params or ())
+        self.connection.commit()
+
+    def fetch_all(self, query, params=None):
+        self.cursor.execute(query, params or ())
+        return self.cursor.fetchall()
+
+    def fetch_one(self, query, params=None):
+        self.cursor.execute(query, params or ())
+        return self.cursor.fetchone()
+
+    def close(self):
+        self.cursor.close()
+        self.connection.close()
+
+class BaseClientPostgresRep(BaseClient_Rep_Strategy):
+    def __init__(self, db_config):
+        self.db = Database(db_config)
+        self.clients = self.read_all()
+
+    def read_all(self):
+        query = "SELECT * FROM clients"
+        rows = self.db.fetch_all(query)
+        return [BaseClient(client_id=row[0], fullname=row[1], document=row[2],
+                           age=row[3], phone_number=row[4], address=row[5], email=row[6]) for row in rows]
+
+    def save_all(self, data):
+        query = "DELETE FROM clients"
+        self.db.execute_query(query)
+        for client in data:
+            query = """
+                INSERT INTO clients (client_id, fullname, document, age, phone_number, address, email)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
+            """
+            self.db.execute_query(query, (client.get_client_id(), client.get_fullname(), client.get_document(),
+                                          client.get_age(), client.get_phone_number(), client.get_address(),
+                                          client.get_email()))
+
+    def add_client(self, fullname, document, age, phone_number, address, email):
+        new_id = self.get_new_id()
+        if not self.__is_unique(document):
+            raise ValueError(f"Client with this document already exists.")
+        new_client = BaseClient(new_id, fullname, document, age, phone_number, address, email)
+        self.clients.append(new_client)
+        self.save_all(self.clients)
+
+    def replace_by_id(self, client_id, new_client):
+        if not self.__is_unique(new_client.get_document(), client_id):
+            raise ValueError(f"Client with this document already exists.")
+        query = """
+            UPDATE clients 
+            SET fullname = %s, document = %s, age = %s, phone_number = %s, address = %s, email = %s
+            WHERE client_id = %s
+        """
+        self.db.execute_query(query, (new_client.get_fullname(), new_client.get_document(), new_client.get_age(),
+                                      new_client.get_phone_number(), new_client.get_address(), new_client.get_email(),
+                                      client_id))
+        return True
+
+    def delete_by_id(self, client_id):
+        query = "DELETE FROM clients WHERE client_id = %s"
+        self.db.execute_query(query, (client_id,))
+
+    def get_by_id(self, client_id):
+        query = "SELECT * FROM clients WHERE client_id = %s"
+        row = self.db.fetch_one(query, (client_id,))
+        if row:
+            return BaseClient(client_id=row[0], fullname=row[1], document=row[2],
+                              age=row[3], phone_number=row[4], address=row[5], email=row[6])
+        else:
+            raise ValueError(f"Client with ID {client_id} not found")
+
+    def __is_unique(self, document, unverifiable_client_id=None):
+        query = "SELECT client_id FROM clients WHERE document = %s"
+        result = self.db.fetch_one(query, (document,))
+        return result is None or result[0] == unverifiable_client_id
+
+    def get_new_id(self):
+        query = "SELECT MAX(client_id) FROM clients"
+        result = self.db.fetch_one(query)
+        return (result[0] or 0) + 1
+
+    def close(self):
+        self.db.close()
+        
 class BaseClient_Rep_Json(BaseClient_Rep_Strategy):
     def __init__(self, filename):
         self.filename = filename
@@ -278,7 +378,7 @@ class BaseClient_Rep_Yaml(BaseClient_Rep_Strategy):
         try:
             with open(self.filename, 'r', encoding='utf-8') as file:
                 data = yaml.safe_load(file)
-                print(f"Загруженные данные из YAML: {data}")  # Отладочный вывод
+                print(f"Загруженные данные из YAML: {data}")
                 return [BaseClient.from_dict(client) for client in data] if data else []
         except FileNotFoundError:
             print(f"Файл {self.filename} не найден.")
@@ -315,81 +415,6 @@ class BaseClientManagerStrategy:
     
     def sort_by_field(self):
         return self.repository.sort_by_field()
-
-class BaseClientPostgresRep(BaseClient_Rep_Strategy):
-    def __init__(self, db_config):
-        self.db_config = db_config
-        self.connection = psycopg2.connect(**db_config)
-        self.cursor = self.connection.cursor()
-        self.clients = self.read_all()
-
-    def read_all(self) -> List[BaseClient]:
-        self.cursor.execute("SELECT * FROM clients")
-        rows = self.cursor.fetchall()
-        return [BaseClient(client_id=row[0], fullname=row[1], document=row[2], 
-                           age=row[3], phone_number=row[4], address=row[5], email=row[6]) for row in rows]
-
-    def save_all(self, data: List[BaseClient]):
-        self.cursor.execute("DELETE FROM clients")
-        for client in data:
-            self.cursor.execute(
-                """
-                INSERT INTO clients (client_id, fullname, document, age, phone_number, address, email)
-                VALUES (%s, %s, %s, %s, %s, %s, %s)
-                """,
-                (client.get_client_id(), client.get_fullname(), client.get_document(), 
-                 client.get_age(), client.get_phone_number(), client.get_address(), client.get_email())
-            )
-        self.connection.commit()
-
-    def add_client(self, fullname, document, age, phone_number, address, email):
-        new_id = self.get_new_id()
-        if not self.__is_unique(document):
-            raise ValueError(f"Client with this document already exists.")
-        new_client = BaseClient(new_id, fullname, document, age, phone_number, address, email)
-        self.clients.append(new_client)
-        self.save_all(self.clients)
-
-    def replace_by_id(self, client_id, new_client):
-        if not self.__is_unique(new_client.get_document(), client_id):
-            raise ValueError(f"Client with this document already exists.")
-        self.cursor.execute("""
-            UPDATE clients 
-            SET fullname = %s, document = %s, age = %s, phone_number = %s, address = %s, email = %s
-            WHERE client_id = %s
-            """, 
-            (new_client.get_fullname(), new_client.get_document(), new_client.get_age(), 
-             new_client.get_phone_number(), new_client.get_address(), new_client.get_email(), client_id)
-        )
-        self.connection.commit()
-        return True
-
-    def delete_by_id(self, client_id):
-        self.cursor.execute("DELETE FROM clients WHERE client_id = %s", (client_id,))
-        self.connection.commit()
-
-    def get_by_id(self, client_id):
-        self.cursor.execute("SELECT * FROM clients WHERE client_id = %s", (client_id,))
-        row = self.cursor.fetchone()
-        if row:
-            return BaseClient(client_id=row[0], fullname=row[1], document=row[2], 
-                              age=row[3], phone_number=row[4], address=row[5], email=row[6])
-        else:
-            raise ValueError(f"Client with ID {client_id} not found")
-
-    def __is_unique(self, document, unverifiable_client_id=None):
-        self.cursor.execute("SELECT client_id FROM clients WHERE document = %s", (document,))
-        result = self.cursor.fetchone()
-        return result is None or result[0] == unverifiable_client_id
-
-    def get_new_id(self):
-        self.cursor.execute("SELECT MAX(client_id) FROM clients")
-        result = self.cursor.fetchone()
-        return (result[0] or 0) + 1
-
-    def close(self):
-        self.cursor.close()
-        self.connection.close()
 
 db_config = {
     'dbname': 'clients',
