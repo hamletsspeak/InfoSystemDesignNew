@@ -186,7 +186,7 @@ class BaseClient:
         self.__phone_number = self.__validate_phone_number(phone_number)
     
     def get_short_info(self):
-        return str(self.short_info)
+        return self.short_info
 
     def __str__(self):
         return (f"Client [ID: {self.get_client_id()}, FIO: {self.get_fullname()}, "
@@ -262,25 +262,41 @@ class DatabaseConnection:
     def __new__(cls, db_config):
         if not cls._instance:
             cls._instance = super().__new__(cls)
-            cls._instance.connection = psycopg2.connect(**db_config)
-            cls._instance.cursor = cls._instance.connection.cursor()
+            cls._instance.connection = None
+            cls._instance.db_config = db_config
+            cls._instance.connect()
         return cls._instance
 
+    def connect(self):
+        """Устанавливает соединение с базой данных, если оно не активно."""
+        if self.connection is None or self.connection.closed:
+            print("Соединение с базой данных устанавливается...")
+            self.connection = psycopg2.connect(**self.db_config)
+
     def execute_query(self, query, params=None):
-        self.cursor.execute(query, params or ())
-        self.connection.commit()
+        self.connect()  # Проверяем соединение перед запросом
+        with self.connection.cursor() as cursor:
+            cursor.execute(query, params or ())
+            self.connection.commit()
 
     def fetch_all(self, query, params=None):
-        self.cursor.execute(query, params or ())
-        return self.cursor.fetchall()
+        self.connect()  # Проверяем соединение перед запросом
+        with self.connection.cursor() as cursor:
+            cursor.execute(query, params or ())
+            return cursor.fetchall()
 
     def fetch_one(self, query, params=None):
-        self.cursor.execute(query, params or ())
-        return self.cursor.fetchone()
+        self.connect()  # Проверяем соединение перед запросом
+        with self.connection.cursor() as cursor:
+            cursor.execute(query, params or ())
+            return cursor.fetchone()
 
     def close(self):
-        self.cursor.close()
-        self.connection.close()
+        """Закрывает соединение с базой данных, если оно активно."""
+        if self.connection is not None and not self.connection.closed:
+            print("Соединение с базой данных закрывается...")
+            self.connection.close()
+
 
 class BaseClientPostgresRep(BaseClient_Rep_Strategy):
     def __init__(self, db_config):
@@ -497,11 +513,11 @@ db_config = {
 }
 
 postgres_repository = BaseClientPostgresRep(db_config)
-client_manager = BaseClientPostgresAdapter(postgres_repository)
+client_manager = BaseClientManagerStrategy(postgres_repository)
 
 #client_manager.add_client("Иван Иванов", "1211 111112", 30, "89728845782", "Москва", "ivan2@mail.com")
 
-clients = client_manager.read_all()
+clients = client_manager.get_all_clients()
 for client in clients:
     print(client)
 
