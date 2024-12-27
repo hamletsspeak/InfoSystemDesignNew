@@ -193,13 +193,13 @@ class BaseClient:
                 f"Document: {self.get_document()}, Age: {self.__age}, Phone_Number: {self.__phone_number}, "
                 f"Address: {self.__address}, Email: {self.__email}]")
 
-    
     def __eq__(self, other):
         if isinstance(other, BaseClient):
             return (self.short_info == other.short_info)
         return False
 
 class BaseClient_Rep_Strategy(ABC):
+    
     @abstractmethod
     def read_all(self):
         pass
@@ -256,7 +256,7 @@ class BaseClient_Rep_Strategy(ABC):
     def get_count(self):
         return len(self.clients)
     
-class Database:
+class DatabaseConnection:
     _instance = None
 
     def __new__(cls, db_config):
@@ -284,7 +284,7 @@ class Database:
 
 class BaseClientPostgresRep(BaseClient_Rep_Strategy):
     def __init__(self, db_config):
-        self.db = Database(db_config)
+        self.db = DatabaseConnection(db_config)
         self.clients = self.read_all()
 
     def read_all(self):
@@ -351,7 +351,7 @@ class BaseClientPostgresRep(BaseClient_Rep_Strategy):
 
     def close(self):
         self.db.close()
-        
+
 class BaseClient_Rep_Json(BaseClient_Rep_Strategy):
     def __init__(self, filename):
         self.filename = filename
@@ -381,16 +381,88 @@ class BaseClient_Rep_Yaml(BaseClient_Rep_Strategy):
                 print(f"Загруженные данные из YAML: {data}")
                 return [BaseClient.from_dict(client) for client in data] if data else []
         except FileNotFoundError:
-            print(f"Файл {self.filename} не найден.")
-            return []
-        except yaml.YAMLError as e:
-            print(f"Ошибка при парсинге YAML: {e}")
             return []
 
     def save_all(self, data):
         with open(self.filename, 'w') as file:
             yaml.safe_dump([client.to_dict() for client in data], file)
 
+class BaseClientPostgresAdapter(BaseClient_Rep_Strategy):
+    def __init__(self, postgres_rep):
+        self.postgres_rep = postgres_rep
+        
+    def read_all(self):
+        print("Hello Adapter!")
+        return self.postgres_rep.read_all()
+
+    def save_all(self, data):
+        return self.postgres_rep.save_all(data)
+
+    def add_client(self, fullname, document, age, phone_number, address, email):
+        return self.postgres_rep.add_client(fullname, document, age, phone_number, address, email)
+
+    def replace_by_id(self, client_id, new_client):
+        return self.postgres_rep.replace_by_id(client_id, new_client)
+
+    def delete_by_id(self, client_id):
+        return self.postgres_rep.delete_by_id(client_id)
+
+    def get_by_id(self, client_id):
+        return self.postgres_rep.get_by_id(client_id)
+
+    def close(self):
+        self.postgres_rep.close()
+
+class BaseClientJsonAdapter(BaseClient_Rep_Strategy):
+    def __init__(self, json_rep):
+        self.json_rep = json_rep
+
+    def read_all(self):
+        return self.json_rep.read_all()
+
+    def save_all(self, data):
+        return self.json_rep.save_all(data)
+
+    def add_client(self, fullname, document, age, phone_number, address, email):
+        return self.json_rep.add_client(fullname, document, age, phone_number, address, email)
+
+    def replace_by_id(self, client_id, new_client):
+        return self.json_rep.replace_by_id(client_id, new_client)
+
+    def delete_by_id(self, client_id):
+        return self.json_rep.delete_by_id(client_id)
+
+    def get_by_id(self, client_id):
+        return self.json_rep.get_by_id(client_id)
+
+    def close(self):
+        self.json_rep.close()
+
+class BaseClientYamlAdapter(BaseClient_Rep_Strategy):
+    def __init__(self, yaml_rep):
+        self.yaml_rep = yaml_rep
+
+    def read_all(self):
+        return self.yaml_rep.read_all()
+
+    def save_all(self, data):
+        return self.yaml_rep.save_all(data)
+
+    def add_client(self, fullname, document, age, phone_number, address, email):
+        return self.yaml_rep.add_client(fullname, document, age, phone_number, address, email)
+
+    def replace_by_id(self, client_id, new_client):
+        return self.yaml_rep.replace_by_id(client_id, new_client)
+
+    def delete_by_id(self, client_id):
+        return self.yaml_rep.delete_by_id(client_id)
+
+    def get_by_id(self, client_id):
+        return self.yaml_rep.get_by_id(client_id)
+
+    def close(self):
+        self.yaml_rep.close()
+        
 class BaseClientManagerStrategy:
     def __init__(self, repository_strategy: BaseClient_Rep_Strategy):
         self.repository = repository_strategy
@@ -425,11 +497,11 @@ db_config = {
 }
 
 postgres_repository = BaseClientPostgresRep(db_config)
-client_manager = BaseClientManagerStrategy(postgres_repository)
+client_manager = BaseClientPostgresAdapter(postgres_repository)
 
 #client_manager.add_client("Иван Иванов", "1211 111112", 30, "89728845782", "Москва", "ivan2@mail.com")
 
-clients = client_manager.get_all_clients()
+clients = client_manager.read_all()
 for client in clients:
     print(client)
 
